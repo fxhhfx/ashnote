@@ -131,9 +131,53 @@ async function handleCreate(request) {
   });
 }
 
+// 边缘节点本地熔断标记：EdgeKV 读命中节点缓存，焚毁后短时间内可能读到旧副本。
+// 用 Cache API 在同节点记一份状态，读取时先查它，堵住二次读取窗口。
+function burnKey(id) {
+  return "http://ashnote.local/burned/" + id;
+}
+
+async function localState(id) {
+  if (typeof cache === "undefined" || !cache) return null;
+  try {
+    const r = await cache.get(burnKey(id));
+    if (!r) return null;
+    return await r.text();
+  } catch {
+    return null;
+  }
+}
+
+async function markLocalState(id, state) {
+  if (typeof cache === "undefined" || !cache) return;
+  try {
+    await cache.put(
+      burnKey(id),
+      new Response(JSON.stringify({ state, at: Date.now() }), {
+        headers: [["cache-control", "max-age=86400"]],
+      })
+    );
+  } catch {
+    // 标记失败不影响主流程
+  }
+}
+
 async function handleRead(request) {
   const body = await readBody(request);
   if (!body || !body.id) return json({ error: "missing_id" }, 400);
+
+  const local = await localState(body.id);
+  if (local) {
+    let l = null;
+    try {
+      l = JSON.parse(local);
+    } catch {
+      l = null;
+    }
+    if (l && (l.state === "read" || l.state === "burned")) {
+      return json({ state: "read", readAt: l.at || null }, 410);
+    }
+  }
 
   const rec = await readRecord(body.id);
   if (!rec) return json({ state: "not_found" }, 404);
@@ -159,6 +203,7 @@ async function handleRead(request) {
     rec.ct = "";
     rec.iv = "";
     await writeRecord(body.id, rec);
+    await markLocalState(body.id, "read");
     await bumpStats(-1);
   } else {
     // 口令模式：先交付密文，等浏览器解密成功后再调 /api/burn 确认焚毁
@@ -182,6 +227,7 @@ async function handleBurn(request) {
   rec.ct = "";
   rec.iv = "";
   await writeRecord(body.id, rec);
+  await markLocalState(body.id, "read");
   await bumpStats(-1);
 
   return json({ ok: true });
@@ -194,6 +240,21 @@ async function handleStatus(request) {
   const rec = await readRecord(body.id);
   if (!rec) return json({ state: "not_found" }, 404);
   if (rec.mgmt !== body.mgmt) return json({ error: "forbidden" }, 403);
+
+  // KV 读取可能命中节点缓存，用本地标记校正「已读」状态
+  const local = await localState(body.id);
+  if (local && rec.state !== "read") {
+    let l = null;
+    try {
+      l = JSON.parse(local);
+    } catch {
+      l = null;
+    }
+    if (l && (l.state === "read" || l.state === "burned")) {
+      rec.state = "read";
+      rec.readAt = rec.readAt || l.at;
+    }
+  }
 
   let state = rec.state;
   if (state === "reading") state = "unread";
@@ -222,6 +283,7 @@ async function handleDestroy(request) {
   rec.ct = "";
   rec.iv = "";
   await writeRecord(body.id, rec);
+  await markLocalState(body.id, "read");
   if (wasUnread) await bumpStats(-1);
 
   return json({ ok: true });
