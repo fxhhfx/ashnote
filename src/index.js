@@ -45,9 +45,23 @@ function store() {
   return new EdgeKV({ namespace: NS });
 }
 
+// EdgeKV 偶发瞬时错误（get/put 随机失败），重试即可恢复
+async function withRetry(fn, tries = 4) {
+  let lastErr;
+  for (let i = 0; i < tries; i++) {
+    try {
+      return await fn();
+    } catch (e) {
+      lastErr = e;
+      if (i < tries - 1) await new Promise((r) => setTimeout(r, 80 * (i + 1)));
+    }
+  }
+  throw lastErr;
+}
+
 async function readRecord(id) {
   if (!/^[A-Za-z0-9_-]{4,64}$/.test(id)) return null;
-  const raw = await store().get("n:" + id, { type: "text" });
+  const raw = await withRetry(() => store().get("n:" + id, { type: "text" }));
   if (raw === undefined || raw === null) return null;
   try {
     return JSON.parse(raw);
@@ -57,7 +71,7 @@ async function readRecord(id) {
 }
 
 async function writeRecord(id, rec) {
-  await store().put("n:" + id, JSON.stringify(rec));
+  await withRetry(() => store().put("n:" + id, JSON.stringify(rec)));
 }
 
 async function readBody(request) {
@@ -218,10 +232,10 @@ async function handleDestroy(request) {
 async function bumpStats(delta) {
   try {
     const kv = store();
-    const raw = await kv.get("stats:total", { type: "text" });
+    const raw = await withRetry(() => kv.get("stats:total", { type: "text" }));
     const cur = Number(raw) || 0;
     const next = Math.max(0, cur + delta);
-    await kv.put("stats:total", String(next));
+    await withRetry(() => kv.put("stats:total", String(next)));
   } catch (e) {
     // 计数失败不影响主流程
   }
@@ -230,7 +244,7 @@ async function bumpStats(delta) {
 async function handleStats() {
   let total = 0;
   try {
-    const raw = await store().get("stats:total", { type: "text" });
+    const raw = await withRetry(() => store().get("stats:total", { type: "text" }));
     total = Number(raw) || 0;
   } catch (e) {
     total = 0;
