@@ -1,0 +1,10 @@
+{
+  "name": "ashnote",
+  "entry": "./src/index.js",
+  "installCommand": "",
+  "buildCommand": "",
+  "assets": {
+    "directory": "./public",
+    "notFoundStrategy": "404Page"
+  }
+}

@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>灰烬笔记 · 读取</title>
+  <meta name="robots" content="noindex, nofollow" />
+  <link rel="stylesheet" href="/assets/style.css" />
+</head>
+<body>
+  <div class="stage" id="stage">
+    <div class="paper3d">
+      <div class="face front"></div>
+      <div class="face back"></div>
+      <div class="side"></div>
+    </div>
+  </div>
+
+  <div class="wrap narrow">
+    <header class="brand">
+      <div class="brand-mark"></div>
+      <div class="brand-name">灰烬笔记<span>ASHNOTE</span></div>
+    </header>
+
+    <!-- 加载中 -->
+    <div id="state-loading">
+      <h1>正在取回<span class="accent">密文</span></h1>
+      <p class="lead">内容只会在这里出现一次，请不要刷新页面。</p>
+    </div>
+
+    <!-- 口令 -->
+    <div id="state-pass" style="display: none">
+      <h1>这封笔记<span class="accent">上了锁</span></h1>
+      <p class="lead">输入发送方另外告诉你的口令。输入错误不会消耗内容，可以重试。</p>
+      <div class="card">
+        <label class="field-label" for="passphrase">访问口令</label>
+        <input type="password" id="passphrase" placeholder="请输入口令" autocomplete="off" />
+        <button class="btn btn-primary" id="unlock-btn">解锁</button>
+        <div class="msg error" id="pass-err"></div>
+      </div>
+    </div>
+
+    <!-- 内容 -->
+    <div id="state-content" style="display: none">
+      <h1>这是<span class="accent">全部内容</span></h1>
+      <p class="lead">密文已经从这个边缘节点上删除，刷新页面也不会再看到。</p>
+      <div class="card">
+        <div class="secret-box" id="secret"></div>
+        <div class="row">
+          <button class="btn btn-ghost btn-sm" id="copy-secret">复制内容</button>
+          <span class="hash" id="burn-state"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 已焚毁 -->
+    <div id="state-gone" style="display: none">
+      <h1>已经<span class="accent">烧掉了</span></h1>
+      <p class="lead" id="gone-desc">这条笔记只能被读取一次，现在它已经不存在了。</p>
+      <div class="card center">
+        <a class="btn btn-ghost" href="/">去写一条新的</a>
+      </div>
+    </div>
+
+    <footer class="foot">
+      解密在你的浏览器里完成，密钥没有经过任何服务器。
+    </footer>
+  </div>
+
+  <script type="module" src="/assets/view.js"></script>
+</body>
+</html>

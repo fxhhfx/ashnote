@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>灰烬笔记 · 状态</title>
+  <meta name="robots" content="noindex, nofollow" />
+  <link rel="stylesheet" href="/assets/style.css" />
+</head>
+<body>
+  <div class="wrap narrow">
+    <header class="brand">
+      <div class="brand-mark"></div>
+      <div class="brand-name">灰烬笔记<span>ASHNOTE</span></div>
+    </header>
+
+    <h1>这条笔记的<span class="accent">状态</span></h1>
+    <p class="lead">只有拿到管理链接的人才能看到这里。</p>
+
+    <div class="card" id="status-card" style="display: none">
+      <div class="status-line">
+        <span class="dot" id="dot"></span>
+        <strong id="state-text"></strong>
+      </div>
+      <div class="divider"></div>
+      <div class="kv"><span class="k">加密方式</span><span class="v" id="mode-text">-</span></div>
+      <div class="kv"><span class="k">创建时间</span><span class="v" id="created-text">-</span></div>
+      <div class="kv"><span class="k">有效期至</span><span class="v" id="expires-text">-</span></div>
+      <div class="kv"><span class="k">阅读时间</span><span class="v" id="read-text">-</span></div>
+      <div class="kv"><span class="k">剩余时间</span><span class="v" id="remain-text">-</span></div>
+
+      <button class="btn btn-danger btn-sm" id="destroy-btn" style="margin-top: 18px">
+        立即销毁这条笔记
+      </button>
+      <div class="msg ok" id="destroy-ok"></div>
+      <div class="msg error" id="destroy-err"></div>
+    </div>
+
+    <div class="card" id="error-card" style="display: none">
+      <div class="status-line">
+        <span class="dot expired"></span>
+        <strong id="error-text">链接无效</strong>
+      </div>
+      <p class="hint" style="margin-bottom: 0">
+        管理链接可能不完整，或者这条笔记已经过期很久了。
+      </p>
+    </div>
+
+    <div class="card center" style="margin-top: 16px">
+      <a class="btn btn-ghost" href="/">写一条新的</a>
+    </div>
+
+    <footer class="foot">状态查询不涉及内容本身，服务端只返回时间和状态。</footer>
+  </div>
+
+  <script type="module" src="/assets/status.js"></script>
+</body>
+</html>
